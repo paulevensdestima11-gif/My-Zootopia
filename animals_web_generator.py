@@ -5,73 +5,74 @@ import webbrowser
 
 def load_data(file_path):
     """Load JSON data from file"""
-    with open(file_path, "r", encoding="utf-8") as handle:
-        return json.load(handle)
+    with open(file_path, "r", encoding="utf-8") as file:
+        return json.load(file)
 
 
-def build_html(animals_data):
-    """Generate HTML list items from JSON"""
+def serialize_animal(animal):
+    """Convert one animal into required text format"""
+
+    characteristics = animal.get("characteristics", {})
+
+    name = animal.get("name")
+    diet = characteristics.get("diet")
+    locations = animal.get("locations")
+    animal_type = characteristics.get("type")
+
     output = ""
 
-    for animal in animals_data:
-        name = animal.get("name")
-        characteristics = animal.get("characteristics", {})
+    # First line: name only (NO "Name:")
+    if name:
+        output += f"{name}\n"
 
-        diet = characteristics.get("diet")
-        animal_type = characteristics.get("type")
-        locations = animal.get("locations")
+    # Required fields
+    if diet:
+        output += f"Diet: {diet}\n"
 
-        output += '<li class="cards__item">\n'
+    if locations:
+        output += f"Location: {' and '.join(locations)}\n"
 
-        # Title
-        if name:
-            output += f'  <div class="card__title">{name}</div>\n'
+    if animal_type:
+        output += f"Type: {animal_type}\n"
 
-        # Text block
-        output += '  <p class="card__text">\n'
-
-        if diet:
-            output += f'      <strong>Diet:</strong> {diet}<br/>\n'
-
-        if locations:
-            location_text = " and ".join(locations)
-            output += f'      <strong>Location:</strong> {location_text}<br/>\n'
-
-        if animal_type:
-            output += f'      <strong>Type:</strong> {animal_type.capitalize()}<br/>\n'
-
-        output += '  </p>\n'
-        output += '</li>\n'
+    output += "\n"
 
     return output
+
+
+def build_output(data):
+    """Build full output for all animals"""
+    return "".join(serialize_animal(animal) for animal in data)
 
 
 def main():
     base_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # File paths (robust, no guessing)
     json_path = os.path.join(base_dir, "animals_data.json")
     template_path = os.path.join(base_dir, "animals_template.html")
     output_path = os.path.join(base_dir, "animals.html")
 
-    # Load data
-    animals_data = load_data(json_path)
+    # Load JSON data
+    data = load_data(json_path)
 
-    # Generate HTML
-    cards_html = build_html(animals_data)
+    # Build formatted text
+    animals_text = build_output(data)
 
-    # Load template
+    # Load HTML template
     with open(template_path, "r", encoding="utf-8") as file:
         template = file.read()
 
-    # Inject content
-    final_html = template.replace("__REPLACE_ANIMALS_INFO__", cards_html)
+    # Replace placeholder
+    final_html = template.replace("__REPLACE_ANIMALS_INFO__", animals_text)
 
-    # Write final HTML
+    # Debug (optional, can remove later)
+    print(final_html[:300])
+
+    # Write final HTML file
     with open(output_path, "w", encoding="utf-8") as file:
         file.write(final_html)
 
-    print("HTML generated successfully:", output_path)
+    print("Generated:", output_path)
 
     # Open in browser
     webbrowser.open(f"file://{output_path}")
